@@ -9,25 +9,36 @@ public class Main {
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        System.out.println("");
+        System.out.print("Enter customer id: ");
         int customerId = scanner.nextInt();
 
         Customer customer = getCustomer(customerId);
 
         if (customer == null) {
+            System.out.println("The id you provided (or didn't provide) was not found. " +
+                    "Therefore I took the liberty to select one for you.");
             customer = getRandomCustomer();
         }
-        printCustomerName(customer);
 
+        if (customer != null) {
+            printCustomerName(customer);
+        } else {
+            System.out.println("Something went wrong when trying to fetch customer... " +
+                    "I wonder why.. my code is flawless!");
+        }
+        
         ArrayList<String> allGenres = getCustomerGenres(customerId);
-        ArrayList<String> genres = getMostPopularGenre(allGenres);
-
-        printMostPopularGenre(genres);
+        if (allGenres != null) {
+            ArrayList<String> genres = getMostPopularGenre(allGenres);
+            printMostPopularGenre(genres);
+        } else {
+            System.out.println("Something went wrong when fetching the genres..");
+        }
     }
 
     public static void printCustomerName(Customer customer) {
         System.out.println();
-        System.out.println("Customer's full name is \"" + customer.getName() + "\"");
+        System.out.println("Customer's full name is \"" + customer.getName() + "\" (id: " + customer.getCustomerID() + ")");
     }
 
     public static void printMostPopularGenre(ArrayList<String> genres) {
@@ -39,36 +50,36 @@ public class Main {
                 }
             }
             System.out.print(genres.get(genres.size() - 1));
+        } else if (genres.size() == 0) {
+            System.out.println("This customers favorite genre was not found..");
         } else {
             System.out.print("This customers favorite genre is ");
             for (String genre : genres) {
                 System.out.print(genre);
             }
         }
+        System.out.println();
     }
 
     public static Customer getCustomer(int customerId) {
         try {
             // Open Connection
             conn = DriverManager.getConnection(URL);
-            System.out.println("Connection to SQLite has been established.");
 
             // Prepare Statement
             PreparedStatement ps =
-                    conn.prepareStatement("SELECT FirstName,LastName FROM customer WHERE CustomerId=?");
+                    conn.prepareStatement("SELECT CustomerId, FirstName,LastName FROM customer WHERE CustomerId=?");
             ps.setInt(1, customerId);
             // Execute Statement
             ResultSet resultSet = ps.executeQuery();
 
             // Process Results
-            while (resultSet.next()) {
-                Customer customer = new Customer(
-                        resultSet.getString(customerId),
-                        resultSet.getString("FirstName"),
-                        resultSet.getString("LastName")
-                );
-                return customer;
-            }
+            return new Customer(
+                    resultSet.getString("CustomerId"),
+                    resultSet.getString("FirstName"),
+                    resultSet.getString("LastName")
+            );
+
         } catch (Exception ex) {
             System.out.println("Something went wrong...");
             System.out.println(ex.toString());
@@ -88,7 +99,6 @@ public class Main {
         try {
             // Open Connection
             conn = DriverManager.getConnection(URL);
-            System.out.println("Connection to SQLite has been established.");
 
             // Prepare Statement
             PreparedStatement ps =
@@ -167,9 +177,9 @@ public class Main {
     public static ArrayList<String> getMostPopularGenre(ArrayList<String> allGenres) {
 
         // Insert all unique strings and update count if a string is not unique.
-        Map<String, Integer> occurrences = new HashMap<String, Integer>();
+        Map<String, Integer> occurrences = new HashMap<>();
         for (String genre : allGenres) {
-            if (occurrences.keySet().contains(genre)) // if already exists then update count.
+            if (occurrences.containsKey(genre)) // if already exists then update count.
                 occurrences.put(genre, occurrences.get(genre) + 1);
             else
                 occurrences.put(genre, 1); // else insert it in the map.
