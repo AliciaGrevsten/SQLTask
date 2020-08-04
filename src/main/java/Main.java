@@ -10,24 +10,36 @@ public class Main {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter customer id: ");
-        int customerId = scanner.nextInt();
 
-        Customer customer = getCustomer(customerId);
+        Customer customer;
+        int customerId;
 
+        // If input is integer, proceed as usual
+        if (scanner.hasNextInt()) {
+            customerId = scanner.nextInt();
+            customer = getCustomer(customerId);
+        }
+        // Otherwise fetch random customer
+        else {
+            System.out.println("Because you didn't provide a valid id " +
+                    "I took the liberty to select one for you.");
+            customer = getRandomCustomer();
+            customerId = Integer.parseInt(customer.getCustomerID());
+        }
+        // If customer was not found from user input get random customer
         if (customer == null) {
-            System.out.println("The id you provided (or didn't provide) was not found. " +
+            System.out.println("The id you provided was not found. " +
                     "Therefore I took the liberty to select one for you.");
             customer = getRandomCustomer();
+            customerId = Integer.parseInt(customer.getCustomerID());
         }
 
-        if (customer != null) {
-            printCustomerName(customer);
-        } else {
-            System.out.println("Something went wrong when trying to fetch customer... " +
-                    "I wonder why.. my code is flawless!");
-        }
-        
+        // Prints customer details
+        printCustomerName(customer);
+
+        // Fetches ALL the genres
         ArrayList<String> allGenres = getCustomerGenres(customerId);
+        // If genres are found, proceed with fetching the most popular ones and then print the result
         if (allGenres != null) {
             ArrayList<String> genres = getMostPopularGenre(allGenres);
             printMostPopularGenre(genres);
@@ -42,23 +54,26 @@ public class Main {
     }
 
     public static void printMostPopularGenre(ArrayList<String> genres) {
-        if (genres.size() > 1) {
-            System.out.print("This customers favorite genres are ");
-            for (int i = 0; i < genres.size(); i++) {
-                while (i < genres.size()) {
-                    System.out.print(genres.get(i) + " and ");
+        switch (genres.size()) {
+            case 1: // If the user has only one favorite genre
+                System.out.print("This customers favorite music genre is ");
+                for (String genre : genres) {
+                    System.out.print(genre);
                 }
-            }
-            System.out.print(genres.get(genres.size() - 1));
-        } else if (genres.size() == 0) {
-            System.out.println("This customers favorite genre was not found..");
-        } else {
-            System.out.print("This customers favorite genre is ");
-            for (String genre : genres) {
-                System.out.print(genre);
-            }
+                break;
+            case 0: // If the customer has no favorite genres at all (unlikely)
+                System.out.println("This customers favorite music genre was not found..");
+                break;
+            default: // If the customer has more than one favorite genre
+                System.out.print("This customers favorite music genres are ");
+                for (int i = 0; i < genres.size(); i++) {
+                    while (i < genres.size()) {
+                        System.out.print(genres.get(i) + " and ");
+                    }
+                }
+                System.out.print(genres.get(genres.size() - 1));
+                break;
         }
-        System.out.println();
     }
 
     public static Customer getCustomer(int customerId) {
@@ -106,7 +121,7 @@ public class Main {
             // Execute Statement
             ResultSet resultSet = ps.executeQuery();
 
-            // Process Results
+            // Process Results by creating list of all the customers in the database
             ArrayList<Customer> customers = new ArrayList<>();
             while (resultSet.next()) {
                 customers.add(new Customer(
@@ -116,8 +131,10 @@ public class Main {
                 ));
             }
 
+            //  Selects a random number from 0 to size of customer array
             int ran = new Random().nextInt(customers.size());
 
+            //  Returns customer with random id
             return customers.get(ran);
 
         } catch (Exception ex) {
@@ -140,7 +157,7 @@ public class Main {
             // Open Connection
             conn = DriverManager.getConnection(URL);
 
-            // Prepare Statement
+            // Prepare Statement, Select the names of all the genres connected with this customer
             PreparedStatement getInvoiceId =
                     conn.prepareStatement("SELECT Genre.Name FROM Genre " +
                             "JOIN Track ON Track.GenreId = Genre.GenreId " +
@@ -152,13 +169,15 @@ public class Main {
             // Execute Statement
             ResultSet resultSet = getInvoiceId.executeQuery();
 
+            // Process Results, stores all the genres in an array
             ArrayList<String> allGenres = new ArrayList<>();
-            // Process Results
             while (resultSet.next()) {
                 allGenres.add(resultSet.getString("Name"));
             }
 
+            // Returns the array
             return allGenres;
+
         } catch (Exception ex) {
             System.out.println("Something went wrong...");
             System.out.println(ex.toString());
@@ -184,7 +203,7 @@ public class Main {
             else
                 occurrences.put(genre, 1); // else insert it in the map.
         }
-        // Traverse the map for the maximum value.
+        // Traverse the map for the maximum value. Stores the most popular genre in array.
         ArrayList<String> genres = new ArrayList<>();
         String maxGenre = "";
         int maxVal = 0;
@@ -202,6 +221,8 @@ public class Main {
             }
         }
         genres.add(maxGenre);
+
+        // Returns array of most popular genre/-s
         return genres;
     }
 }
